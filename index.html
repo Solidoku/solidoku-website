@@ -1,30 +1,603 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Solidoku — solitaire × sudoku</title>
-<style>
-  body { font-family: -apple-system, "SF Pro Rounded", system-ui, sans-serif;
-         max-width: 640px; margin: 0 auto; padding: 48px 24px; color: #1c1c1e;
-         background: linear-gradient(#c7e2ff, #ddd6fc 55%, #ffdae9) fixed; min-height: 100vh;
-         text-align: center; }
-  h1 { font-weight: 800; font-size: 3em; margin-bottom: 0; }
-  .sub { color: #6e6e73; font-weight: 600; letter-spacing: .08em; }
-  a { color: #007aff; }
-  .card { background: #fff; border-radius: 24px; padding: 32px;
-          box-shadow: 0 8px 24px rgba(20,20,40,.12); }
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Solidoku — Solitaire × Sudoku</title>
+  <meta name="description" content="A fresh twist on two classics: draw cards from the deck and play them onto the sudoku board. Easy to learn, endlessly replayable.">
+  <meta property="og:title" content="Solidoku — Solitaire × Sudoku">
+  <meta property="og:description" content="Draw a card. Find its home. Fill the board.">
+  <meta property="og:image" content="images/icon.png">
+  <meta property="og:type" content="website">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --heart:   #FF3B30;
+      --club:    #34C759;
+      --spade:   #5856D6;
+      --diamond: #FF9F0A;
+      --blue:    #007AFF;
+      --bg-top:  #c7e2ff;
+      --bg-mid:  #ddd6fc;
+      --bg-bot:  #ffdae9;
+      --dark:    #1c1c1e;
+      --gray:    #6e6e73;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, "SF Pro Rounded", "SF Pro Text", system-ui, sans-serif;
+      color: var(--dark);
+      background: #fff;
+      overflow-x: hidden;
+    }
+
+    /* ── HERO ──────────────────────────────────────────────── */
+    .hero {
+      background: linear-gradient(150deg, var(--bg-top) 0%, var(--bg-mid) 52%, var(--bg-bot) 100%);
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      gap: 0;
+      padding: 80px 64px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-text {
+      position: relative;
+      z-index: 2;
+      max-width: 520px;
+    }
+
+    .hero-icon {
+      width: 96px;
+      height: 96px;
+      border-radius: 22%;
+      box-shadow: 0 16px 48px rgba(0,0,0,.18);
+      margin-bottom: 28px;
+      display: block;
+    }
+
+    .hero h1 {
+      font-size: clamp(3.4rem, 6vw, 5.5rem);
+      font-weight: 800;
+      letter-spacing: -3px;
+      line-height: 1;
+      margin-bottom: 10px;
+    }
+
+    .hero .tagline {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--gray);
+      letter-spacing: .1em;
+      margin-bottom: 24px;
+    }
+
+    .hero .pitch {
+      font-size: 1.1rem;
+      line-height: 1.65;
+      color: #444;
+      margin-bottom: 38px;
+      max-width: 400px;
+    }
+
+    /* App Store button */
+    .appstore-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--dark);
+      color: #fff;
+      text-decoration: none;
+      padding: 14px 28px;
+      border-radius: 16px;
+      font-size: 1rem;
+      font-weight: 600;
+      box-shadow: 0 10px 30px rgba(0,0,0,.22);
+      transition: transform .18s, box-shadow .18s;
+    }
+    .appstore-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 16px 40px rgba(0,0,0,.28);
+    }
+    .appstore-btn svg { width: 28px; height: 28px; flex-shrink: 0; }
+    .appstore-btn-inner { display: flex; flex-direction: column; line-height: 1.2; }
+    .appstore-btn-inner span:first-child { font-size: .7rem; font-weight: 400; opacity: .8; }
+    .appstore-btn-inner span:last-child { font-size: 1.1rem; font-weight: 700; }
+
+    /* Phone mockups */
+    .hero-phones {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 16px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .phone {
+      border-radius: 44px;
+      border: 10px solid var(--dark);
+      overflow: hidden;
+      box-shadow: 0 40px 80px rgba(0,0,0,.28), 0 0 0 1px rgba(0,0,0,.08);
+      background: #000;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .phone::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 95px; height: 24px;
+      background: var(--dark);
+      border-radius: 0 0 16px 16px;
+      z-index: 10;
+    }
+    .phone img { width: 100%; display: block; }
+
+    .phone-main  { width: 210px; animation: float 4.5s ease-in-out infinite; }
+    .phone-left  { width: 170px; margin-bottom: 20px; animation: float 4.5s ease-in-out infinite; animation-delay: -2s; opacity: .9; }
+    .phone-right { width: 170px; margin-bottom: 40px; animation: float 4.5s ease-in-out infinite; animation-delay: -3.5s; opacity: .9; }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50%        { transform: translateY(-14px); }
+    }
+
+    /* Floating card decorations */
+    .deco-card {
+      position: absolute;
+      pointer-events: none;
+      filter: drop-shadow(0 8px 20px rgba(0,0,0,.18));
+      animation: float-deco 5s ease-in-out infinite;
+    }
+    .deco-card img { width: 70px; display: block; }
+    .dc1 { top: 10%; left: 3%;  animation-delay: 0s;    transform: rotate(-20deg); }
+    .dc2 { top: 20%; right: 2%; animation-delay: -1.8s; transform: rotate(15deg); }
+    .dc3 { bottom: 14%; left: 6%; animation-delay: -3.2s; transform: rotate(12deg); }
+    .dc4 { bottom: 10%; right: 4%; animation-delay: -0.8s; transform: rotate(-14deg); }
+    @keyframes float-deco {
+      0%, 100% { translate: 0 0; }
+      50%       { translate: 0 -12px; }
+    }
+
+    /* ── INTRO STRIP ───────────────────────────────────────── */
+    .intro-strip {
+      background: var(--dark);
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      gap: 60px;
+      flex-wrap: wrap;
+      padding: 48px 40px;
+    }
+    .intro-stat { text-align: center; }
+    .intro-stat .num {
+      font-size: 2.4rem;
+      font-weight: 800;
+      letter-spacing: -1px;
+    }
+    .intro-stat .lbl {
+      font-size: .85rem;
+      font-weight: 500;
+      opacity: .55;
+      margin-top: 2px;
+    }
+    .intro-stat .num.heart   { color: var(--heart); }
+    .intro-stat .num.club    { color: var(--club); }
+    .intro-stat .num.spade   { color: var(--spade); }
+    .intro-stat .num.diamond { color: var(--diamond); }
+
+    /* ── HOW IT WORKS ──────────────────────────────────────── */
+    .how {
+      background: var(--dark);
+      color: #fff;
+      padding: 100px 40px;
+      text-align: center;
+    }
+
+    .eyebrow {
+      font-size: .75rem;
+      font-weight: 700;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      opacity: .45;
+      margin-bottom: 14px;
+    }
+
+    .section-title {
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      margin-bottom: 64px;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 20px;
+      max-width: 940px;
+      margin: 0 auto;
+    }
+
+    .step {
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 24px;
+      padding: 36px 24px;
+      text-align: left;
+      transition: background .2s;
+    }
+    .step:hover { background: rgba(255,255,255,.1); }
+
+    .step-emoji { font-size: 2.4rem; margin-bottom: 16px; display: block; }
+    .step h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 8px; }
+    .step p  { font-size: .9rem; line-height: 1.6; opacity: .65; }
+
+    /* ── SCREENSHOTS ───────────────────────────────────────── */
+    .screenshots {
+      background: linear-gradient(150deg, var(--bg-top) 0%, var(--bg-mid) 52%, var(--bg-bot) 100%);
+      padding: 100px 40px;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    .screen-row {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-top: 60px;
+    }
+
+    .screen-item .phone {
+      width: 185px;
+      cursor: default;
+      transition: transform .3s ease, box-shadow .3s ease;
+    }
+    .screen-item .phone:hover {
+      transform: translateY(-10px) scale(1.03);
+      box-shadow: 0 50px 90px rgba(0,0,0,.32), 0 0 0 1px rgba(0,0,0,.08);
+    }
+    .screen-item:nth-child(2) .phone { margin-bottom: 30px; }
+
+    .screen-caption {
+      margin-top: 16px;
+      font-size: .85rem;
+      font-weight: 600;
+      color: var(--gray);
+    }
+
+    /* ── FEATURES ──────────────────────────────────────────── */
+    .features {
+      background: #fff;
+      padding: 100px 40px;
+      text-align: center;
+    }
+
+    .features .eyebrow { color: var(--gray); }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      max-width: 960px;
+      margin: 60px auto 0;
+      text-align: left;
+    }
+
+    .feat {
+      background: #f5f5f7;
+      border-radius: 24px;
+      padding: 36px 28px;
+    }
+    .feat-emoji { font-size: 2rem; margin-bottom: 14px; display: block; }
+    .feat h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; }
+    .feat p  { font-size: .9rem; color: var(--gray); line-height: 1.6; }
+
+    /* Difficulty pills */
+    .diff-row { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+    .pill {
+      padding: 5px 14px;
+      border-radius: 100px;
+      font-size: .8rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: .02em;
+    }
+    .pill.easy   { background: var(--club); }
+    .pill.medium { background: var(--diamond); }
+    .pill.hard   { background: var(--heart); }
+
+    /* ── CARD BACKS ────────────────────────────────────────── */
+    .cardbaks {
+      background: var(--dark);
+      color: #fff;
+      padding: 100px 40px;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    .cardbaks .eyebrow { color: rgba(255,255,255,.4); }
+
+    .cardbaks .pitch {
+      color: rgba(255,255,255,.6);
+      max-width: 500px;
+      margin: 0 auto;
+      font-size: 1.05rem;
+      line-height: 1.65;
+    }
+
+    .fan {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 60px;
+    }
+
+    .fan-card {
+      width: 90px;
+      border-radius: 14px;
+      box-shadow: 0 12px 32px rgba(0,0,0,.5);
+      transition: transform .25s ease;
+      cursor: default;
+    }
+    .fan-card:hover { transform: translateY(-16px) scale(1.1) !important; }
+
+    .fan-more {
+      font-size: 2rem;
+      font-weight: 800;
+      color: rgba(255,255,255,.3);
+      align-self: center;
+      margin-left: 8px;
+    }
+
+    /* ── DOWNLOAD CTA ──────────────────────────────────────── */
+    .cta {
+      background: linear-gradient(150deg, var(--bg-top) 0%, var(--bg-mid) 52%, var(--bg-bot) 100%);
+      padding: 120px 40px;
+      text-align: center;
+    }
+
+    .cta .hero-icon { margin: 0 auto 28px; }
+
+    .cta h2 {
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      margin-bottom: 12px;
+    }
+    .cta p { font-size: 1.1rem; color: var(--gray); margin-bottom: 40px; }
+
+    /* ── FOOTER ────────────────────────────────────────────── */
+    footer {
+      background: var(--dark);
+      color: rgba(255,255,255,.45);
+      padding: 40px;
+      text-align: center;
+      font-size: .875rem;
+    }
+    .footer-links { display: flex; justify-content: center; gap: 28px; margin-bottom: 14px; }
+    footer a { color: rgba(255,255,255,.6); text-decoration: none; }
+    footer a:hover { color: #fff; }
+
+    /* ── RESPONSIVE ────────────────────────────────────────── */
+    @media (max-width: 860px) {
+      .hero {
+        grid-template-columns: 1fr;
+        padding: 80px 28px 60px;
+        text-align: center;
+      }
+      .hero-text { max-width: 100%; margin: 0 auto; }
+      .hero .pitch { margin-left: auto; margin-right: auto; }
+      .appstore-btn { margin: 0 auto; }
+      .hero-phones { margin-top: 56px; }
+      .phone-left, .phone-right { display: none; }
+      .phone-main { width: 220px; }
+      .dc1, .dc2, .dc3, .dc4 { display: none; }
+    }
+
+    @media (max-width: 560px) {
+      .hero { padding: 70px 20px 48px; }
+      .intro-strip { gap: 32px; padding: 36px 20px; }
+      .how, .screenshots, .features, .cardbaks, .cta { padding: 80px 20px; }
+      .fan-card { width: 72px; }
+    }
+  </style>
 </head>
 <body>
-<div class="card">
-<h1>Solidoku</h1>
-<p class="sub">solitaire &times; sudoku</p>
-<p>Fill the sudoku board by drawing and placing cards. Coming to the App Store.</p>
-<h2>Support</h2>
-<p>Need help or have feedback? Email
-<a href="mailto:rudy@solidoku.com">rudy@solidoku.com</a>.</p>
-<p><a href="privacy.html">Privacy Policy</a></p>
-</div>
+
+<!-- ── HERO ─────────────────────────────────────────────────── -->
+<section class="hero">
+  <!-- Floating card decorations -->
+  <div class="deco-card dc1"><img src="images/card_heart_5.png" alt=""></div>
+  <div class="deco-card dc2"><img src="images/card_diamond_2.png" alt=""></div>
+  <div class="deco-card dc3"><img src="images/card_club_3.png" alt=""></div>
+  <div class="deco-card dc4"><img src="images/card_spade_7.png" alt=""></div>
+
+  <div class="hero-text">
+    <img class="hero-icon" src="images/icon.png" alt="Solidoku">
+    <h1>Solidoku</h1>
+    <p class="tagline">solitaire &nbsp;×&nbsp; sudoku</p>
+    <p class="pitch">A fresh twist on two classics — draw cards from the deck and place them on the sudoku board. Easy to learn, endlessly replayable.</p>
+    <!-- Update href when the App Store link is available -->
+    <a class="appstore-btn" href="#">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+      </svg>
+      <div class="appstore-btn-inner">
+        <span>Download on the</span>
+        <span>App Store</span>
+      </div>
+    </a>
+  </div>
+
+  <div class="hero-phones">
+    <div class="phone phone-left">
+      <img src="images/screen_menu.png" alt="Solidoku main menu">
+    </div>
+    <div class="phone phone-main">
+      <img src="images/screen_game.png" alt="Solidoku gameplay — 5 of Hearts in hand">
+    </div>
+    <div class="phone phone-right">
+      <img src="images/screen_cardbaks.png" alt="Solidoku card backs collection">
+    </div>
+  </div>
+</section>
+
+<!-- ── HOW IT WORKS ─────────────────────────────────────────── -->
+<section class="how">
+  <p class="eyebrow">How it works</p>
+  <h2 class="section-title">Cards meet sudoku</h2>
+
+  <div class="steps">
+    <div class="step">
+      <span class="step-emoji">🃏</span>
+      <h3>Draw a card</h3>
+      <p>Flip from the deck to reveal your next play — a number and a suit. Each card belongs somewhere on the board.</p>
+    </div>
+    <div class="step">
+      <span class="step-emoji">🔷</span>
+      <h3>Find its section</h3>
+      <p>Each 3×3 box belongs to a suit. Hearts go in one box, clubs in another — the suit tells you where to look.</p>
+    </div>
+    <div class="step">
+      <span class="step-emoji">🧠</span>
+      <h3>Apply sudoku logic</h3>
+      <p>Use classic elimination: each number 1–9 appears once per row, column, and box. Find the one cell that works.</p>
+    </div>
+    <div class="step">
+      <span class="step-emoji">🏆</span>
+      <h3>Fill the board</h3>
+      <p>Place every card correctly to win. Wrong moves cost points — but you can still come back from a negative score.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── SCREENSHOTS ───────────────────────────────────────────── -->
+<section class="screenshots">
+  <p class="eyebrow" style="color:var(--gray)">The game</p>
+  <h2 class="section-title">Beautiful, top to bottom</h2>
+
+  <div class="screen-row">
+    <div class="screen-item">
+      <div class="phone"><img src="images/screen_menu.png" alt="Main menu with card back"></div>
+      <p class="screen-caption">Choose Your Card Back</p>
+    </div>
+    <div class="screen-item">
+      <div class="phone"><img src="images/screen_game.png" alt="Game in progress"></div>
+      <p class="screen-caption">Gameplay</p>
+    </div>
+    <div class="screen-item">
+      <div class="phone"><img src="images/screen_difficulty.png" alt="Difficulty selection"></div>
+      <p class="screen-caption">Pick Your Difficulty</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── FEATURES ──────────────────────────────────────────────── -->
+<section class="features">
+  <p class="eyebrow" style="color:var(--gray)">Features</p>
+  <h2 class="section-title">Your game, your pace</h2>
+
+  <div class="feature-grid">
+    <div class="feat">
+      <span class="feat-emoji">🎯</span>
+      <h3>Three Difficulty Levels</h3>
+      <p>From a relaxed Easy to a properly tricky Hard. Jump in wherever feels right.</p>
+      <div class="diff-row">
+        <span class="pill easy">Easy</span>
+        <span class="pill medium">Medium</span>
+        <span class="pill hard">Hard</span>
+      </div>
+    </div>
+
+    <div class="feat">
+      <span class="feat-emoji">🧘</span>
+      <h3>Zen Mode</h3>
+      <p>No score. No clock. No pressure. Just you and the puzzle, at your own pace.</p>
+    </div>
+
+    <div class="feat">
+      <span class="feat-emoji">⚡</span>
+      <h3>Score Chasing</h3>
+      <p>Faster placements earn more. Mistakes cost you. Yes — your score can go negative. Win anyway and wear it with pride.</p>
+    </div>
+
+    <div class="feat">
+      <span class="feat-emoji">💾</span>
+      <h3>Auto-Saves Your Progress</h3>
+      <p>Leave mid-game and come back exactly where you left off. Your puzzle waits patiently.</p>
+    </div>
+
+    <div class="feat">
+      <span class="feat-emoji">✈️</span>
+      <h3>Fully Offline</h3>
+      <p>No internet required. Perfect for flights, commutes, or anywhere you go. Just open and play.</p>
+    </div>
+
+    <div class="feat">
+      <span class="feat-emoji">📖</span>
+      <h3>Built-in Tutorial</h3>
+      <p>New to sudoku? An interactive tutorial walks you through your first deductions step by step.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── CARD BACKS ─────────────────────────────────────────────── -->
+<section class="cardbaks">
+  <p class="eyebrow">Collect</p>
+  <h2 class="section-title">39 card backs to unlock</h2>
+  <p class="pitch">Earn collectible card back designs by playing your way — perfect games, zen wins, speed records, comebacks, and a few surprises. Each one is a badge of honour.</p>
+
+  <div class="fan">
+    <img class="fan-card" src="images/cardback_01.png" alt="Card back: blue polka dots"
+         style="transform: rotate(-18deg) translateY(10px)">
+    <img class="fan-card" src="images/cardback_02.png" alt="Card back: green stripes"
+         style="transform: rotate(-9deg) translateY(4px); width:98px;">
+    <img class="fan-card" src="images/cardback_03.png" alt="Card back: orange zigzag"
+         style="transform: rotate(0deg); width:106px;">
+    <img class="fan-card" src="images/cardback_04.png" alt="Card back: purple circles"
+         style="transform: rotate(9deg) translateY(4px); width:98px;">
+    <img class="fan-card" src="images/cardback_05.png" alt="Card back: red checkerboard"
+         style="transform: rotate(18deg) translateY(10px)">
+    <span class="fan-more">+34</span>
+  </div>
+</section>
+
+<!-- ── DOWNLOAD CTA ───────────────────────────────────────────── -->
+<section class="cta">
+  <img class="hero-icon" src="images/icon.png" alt="Solidoku">
+  <h2>Draw a card. Find its home.<br>Fill the board.</h2>
+  <p>Available now for iPhone.</p>
+  <!-- Update href when the App Store link is available -->
+  <a class="appstore-btn" href="#" style="margin: 0 auto;">
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+    </svg>
+    <div class="appstore-btn-inner">
+      <span>Download on the</span>
+      <span>App Store</span>
+    </div>
+  </a>
+</section>
+
+<!-- ── FOOTER ─────────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-links">
+    <a href="privacy.html">Privacy Policy</a>
+    <a href="mailto:rudy@solidoku.com">Support</a>
+  </div>
+</footer>
+
 </body>
 </html>
